@@ -1,4 +1,4 @@
 # Project 1
 
-Web Programming with Python and JavaScript
+Web Programming with Python, Flask and SQL
 # project1
