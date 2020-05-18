@@ -11,6 +11,9 @@ app = Flask(__name__)
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
 
+# Ensure templates are auto-reloaded
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+
 # Configure session to use filesystem
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -34,3 +37,19 @@ def login():
     else:
         if not request.form.get("username"):
             return render_template("index.html", 404)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def registration():
+    session.clear()
+
+    if request.method == "GET":
+        return render_template("register.html", message="")
+
+    email = request.form.get("email")
+    password = request.form.get("password")
+    username = request.form.get("username")
+    if not all((email, password, username)):
+        return render_template("register.html",  message="All fields must be filled"), 406
+    return "TODO"
+
