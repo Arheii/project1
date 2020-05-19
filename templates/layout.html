@@ -7,15 +7,21 @@
     </head>
     <body>
         <ul class="navbar-nav mr-auto mt-2">
-            <li class="nav-item"><a class="nav-link" href="/">Books</a></li>
+            <li class="nav-item"><a class="nav-link" href="/">Search</a></li>
+            <li class="nav-item"><a class="nav-link" href="/history">History</a></li>
             {% if session.get('username') is none %}
                 <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
                 <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
             {% else %}
                 <li class="nav-item">{{ session.get('username') }} <a class="nav-link" href="/logout">Logout</a></li>
             {% endif %}
-            <li class="nav-item"><a class="nav-link" href="/history">History</a></li>
+
         </ul>
+
+         <form class="form-inline" action="{{ url_for('result') }}">
+            <input name=q class="form-control mr-sm-2" type="search" placeholder="Search books" value='{{ q }}' aria-label="Search">
+            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+         </form>
         <div class="container">
             {% block body %}
             {% endblock %}

@@ -94,3 +94,12 @@ def registration():
 def logout():
     session.clear()
     return render_template("index.html")
+
+
+@app.route("/result", methods=["GET"])
+def result():
+    q = request.args.get("q")
+    print("query=", q)
+    books = db.execute("SELECT * FROM books WHERE title LIKE :q OR isbn LIKE :q OR author LIKE :q LIMIT 30",
+                             {"q": '%' + q + '%'}).fetchall()
+    return render_template("result.html", books=books, q=q)
