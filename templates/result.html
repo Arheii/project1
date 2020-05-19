@@ -11,7 +11,7 @@
       <ol>
       {% for book in books %}
           <li>
-              <a href"#/{{ book.isbn }}">
+              <a href="/book/{{ book.isbn }}">
                   {{ book.isbn }}
               </a>
               {{ book.title }} ({{book.year}}).

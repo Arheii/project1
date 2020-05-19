@@ -98,8 +98,13 @@ def logout():
 
 @app.route("/result", methods=["GET"])
 def result():
-    q = request.args.get("q")
+    q = request.args.get("q").lower()
     print("query=", q)
-    books = db.execute("SELECT * FROM books WHERE title LIKE :q OR isbn LIKE :q OR author LIKE :q LIMIT 30",
+    books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q LIMIT 30",
                              {"q": '%' + q + '%'}).fetchall()
     return render_template("result.html", books=books, q=q)
+
+
+@app.route("/book/<int:isbn>", methods=['GET'])
+def book(isbn):
+    return str(isbn)
