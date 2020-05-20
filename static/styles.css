@@ -1,0 +1,30 @@
+a.author {
+  font-size: 90%;
+  color: darkred; }
+
+.isdn {
+  font-size: 90%;
+  color: gray; }
+
+#logout {
+  font-style: italic; }
+
+#username {
+  color: DarkSlateGrey;
+  font-weight: bold }
+
+
+
+
+.heading {
+  font-size: 20px;
+  margin-right: 45px;
+}
+
+.fa {
+  font-size: 25px;
+}
+
+.checked {
+  color: orange;
+}

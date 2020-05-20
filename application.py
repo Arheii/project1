@@ -5,6 +5,7 @@ from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.security import check_password_hash, generate_password_hash
+import requests
 
 app = Flask(__name__)
 
@@ -105,6 +106,39 @@ def result():
     return render_template("result.html", books=books, q=q)
 
 
-@app.route("/book/<int:isbn>", methods=['GET'])
+@app.route("/book/<string:isbn>", methods=['GET'])
 def book(isbn):
+    book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
+                             {"isbn": isbn}).fetchone()
+    if book is None:
+        return  render_template("error.html", message=f"Code 404. Book with isbn={isbn} not found."), 404
+    
+    api_rews = lookup(isbn)
+    return render_template("book.html", book=book, api_rews=api_rews)
     return str(isbn)
+
+
+
+
+def lookup(isbn):
+    """Request to googleread, return average sqore of book"""
+    # Contact API
+    try:
+        print("zapros, isbn=", isbn)
+        key = os.environ.get("GOODKEY_KEY")
+        response = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": key, "isbns": isbn})
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+
+
+    # Parse response
+    try:
+        q = response.json()
+        print(q)
+        return {
+            "reviews_count": q["books"][0]['work_reviews_count'],
+            "average_rating": float(q["books"][0]['average_rating'])
+        }
+    except (KeyError, TypeError, ValueError):
+        return None

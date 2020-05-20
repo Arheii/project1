@@ -1,22 +1,58 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Login
+    {{ book.title }}
 {% endblock %}
 
 {% block body %}
-    {% if message %}
-        <div class="alert alert-warning" role="alert">
-          {{ message }}
-        </div>
-    {% endif %}
-    <form action="{{ url_for('login') }}" method='post'>
-        <div class="form-group">
-            <input autocomplete="off" autofocus class="form-control" name="email" placeholder="email" required type="email">
-        </div>
-        <div class="form-group">
-            <input class="form-control" name="password" placeholder="Password" required type="password">
-        </div>
-	    <button>Submit</button>
-   </form>
+    <!--To Work with icons-->
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <div class="row justify-content-center">
+    	<div class="col-lg-8 col-md-10 col-sm-12">
+    	    Пишем тут всякую хуйню во всю длинну страины. Автором  хуявторов
+    		<div class="row justify-content-center">
+    			<div class="col-md-6 col-sm-12">
+    			    <p>{{ book.isbn }} {{ book.title }}</p>
+    			    И тут тоже можно писать. может название и год. или ссылку на апишку указать
+    			    а может и картинку вставить если подтянуть
+    			    <br>Так, блэт. как сделать отступы<br>
+    			    <span class="heading">User Rating</span>
+    			    {% for i in range(5) %}
+    			        {% if i < api_rews['average_rating'] %}
+                            <span class="fa fa-star checked"></span>
+                        {% else %}
+                            <span class="fa fa-star"></span>
+                        {% endif %}
+                    {% endfor %}
+
+                    <p>{{ api_rews['average_rating'] }} average based on {{ api_rews['reviews_count'] }} reviews.</p>
+    			</div>
+    			<div class="col-md-6 col-sm-12">
+    			    А тут отзывы. оценка. поле для гольфа
+    			    <p>{{ api_rews }}</p>
+    			    {% if session.get('username') is none %}
+                        Plz, <a href="/login">Login</a> if you want to leave a review
+                    {% else %}
+                        <div id="reviewStars-input">
+                            <input id="star-4" type="radio" name="reviewStars"/>
+                            <label title="gorgeous" for="star-4"></label>
+
+                            <input id="star-3" type="radio" name="reviewStars"/>
+                            <label title="good" for="star-3"></label>
+
+                            <input id="star-2" type="radio" name="reviewStars"/>
+                            <label title="regular" for="star-2"></label>
+
+                            <input id="star-1" type="radio" name="reviewStars"/>
+                            <label title="poor" for="star-1"></label>
+
+                            <input id="star-0" type="radio" name="reviewStars"/>
+                            <label title="bad" for="star-0"></label>
+                        </div>
+                    {% endif %}
+    			</div>
+    		</div>
+    	</div>
+    </div>
+
 {% endblock %}
