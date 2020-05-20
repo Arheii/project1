@@ -106,36 +106,66 @@ def result():
     return render_template("result.html", books=books, q=q)
 
 
-@app.route("/book/<string:isbn>", methods=['GET'])
+@app.route("/book/<string:isbn>", methods=['GET', 'POST'])
 def book(isbn):
-    book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
+
+    book = db.execute("SELECT * FROM books WHERE isbn = :isbn",
                              {"isbn": isbn}).fetchone()
     if book is None:
         return  render_template("error.html", message=f"Code 404. Book with isbn={isbn} not found."), 404
-    
+
+    reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
+                        ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
+                        {"id": book.id}).fetchall()
+
+    # Create variable if the user has already left a review
+    user_ids = [review.user_id for review in reviews]
+    user_id = session.get('user_id')
+    if (user_id is not None) and (user_id in user_ids):
+        is_left_review = True
+    else:
+        is_left_review = False
+
+    # Get average rating from Goodread.com
     api_rews = lookup(isbn)
-    return render_template("book.html", book=book, api_rews=api_rews)
-    return str(isbn)
 
+    if request.method == "POST":
+        rate = request.form.get("rate")
+        review_text = request.form.get("review_text")
 
+        if rate is None or rate not in '12345':
+            return render_template("book.html", book=book, api_rews=api_rews, is_left_review=is_left_review, rate_err="Please rate first"), 406
+
+        if is_left_review:
+            return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review, rate_err="You already left a review"), 406
+
+        db.execute("INSERT INTO reviews (book_id, user_id, date, review_text, mark) \
+                VALUES (:book_id, :user_id, now(), :review_text, :mark)",
+                {"book_id": book.id, "user_id": user_id, "review_text": review_text, "mark": rate})
+        db.commit()
+        reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
+                            ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30 LIMIT 30",\
+                            {"id": book.id}).fetchall()
+        is_left_review = True
+
+    return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review, rate_err="")
 
 
 def lookup(isbn):
     """Request to googleread, return average sqore of book"""
     # Contact API
     try:
-        print("zapros, isbn=", isbn)
+        # print("zapros, isbn=", isbn)
         key = os.environ.get("GOODKEY_KEY")
         response = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": key, "isbns": isbn})
         response.raise_for_status()
     except requests.RequestException:
         return None
 
-
     # Parse response
     try:
         q = response.json()
-        print(q)
+        # print(q)
         return {
             "reviews_count": q["books"][0]['work_reviews_count'],
             "average_rating": float(q["books"][0]['average_rating'])

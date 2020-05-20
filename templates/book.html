@@ -8,51 +8,89 @@
     <!--To Work with icons-->
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <div class="row justify-content-center">
-    	<div class="col-lg-8 col-md-10 col-sm-12">
-    	    Пишем тут всякую хуйню во всю длинну страины. Автором  хуявторов
+        <div class="col-lg-10 col-md-12">
+
     		<div class="row justify-content-center">
-    			<div class="col-md-6 col-sm-12">
-    			    <p>{{ book.isbn }} {{ book.title }}</p>
-    			    И тут тоже можно писать. может название и год. или ссылку на апишку указать
-    			    а может и картинку вставить если подтянуть
-    			    <br>Так, блэт. как сделать отступы<br>
+    			<div class="col-md-5 col-sm-12 pb-3">
+    			    <h4>{{ book.title }}</h4>
+    			    <p>Author:  {{ book.author }}<br>
+    			    Year: {{ book.year }}<br>
+                    isbn: {{ book.isbn }}</p>
     			    <span class="heading">User Rating</span>
-    			    {% for i in range(5) %}
+    			    {% for i in range(1, 6) %}
     			        {% if i < api_rews['average_rating'] %}
                             <span class="fa fa-star checked"></span>
                         {% else %}
                             <span class="fa fa-star"></span>
                         {% endif %}
                     {% endfor %}
+                    <p><b>{{ api_rews['average_rating'] }}</b> average based on {{ api_rews['reviews_count'] }} reviews.</p>
+                    <br>
 
-                    <p>{{ api_rews['average_rating'] }} average based on {{ api_rews['reviews_count'] }} reviews.</p>
-    			</div>
-    			<div class="col-md-6 col-sm-12">
-    			    А тут отзывы. оценка. поле для гольфа
-    			    <p>{{ api_rews }}</p>
+                    {% set disable_tag = 'disabled' %}
     			    {% if session.get('username') is none %}
-                        Plz, <a href="/login">Login</a> if you want to leave a review
+    			        {% set placehold = 'Log in if you want to leave a review' %}
+                    {% elif is_left_review == True %}
+			            {% set placehold = 'You already left a review' %}
                     {% else %}
-                        <div id="reviewStars-input">
-                            <input id="star-4" type="radio" name="reviewStars"/>
-                            <label title="gorgeous" for="star-4"></label>
-
-                            <input id="star-3" type="radio" name="reviewStars"/>
-                            <label title="good" for="star-3"></label>
-
-                            <input id="star-2" type="radio" name="reviewStars"/>
-                            <label title="regular" for="star-2"></label>
-
-                            <input id="star-1" type="radio" name="reviewStars"/>
-                            <label title="poor" for="star-1"></label>
-
-                            <input id="star-0" type="radio" name="reviewStars"/>
-                            <label title="bad" for="star-0"></label>
-                        </div>
+                        {% set placehold = 'What do you think about the book?' %}
+                        {% set disable_tag = '' %}
                     {% endif %}
+                    <form action="#" method='post'>
+                        {% if rate_err %}
+                            <div class="alert alert-warning" role="alert">
+                              {{ rate_err }}
+                            </div>
+                        {% endif %}
+                        <div class="form-group">
+                            <textarea class="form-control" name='review_text' placeholder='{{ placehold }}' rows="3" {{ disable_tag }}></textarea>
+                        </div>
+                        <div class="rate">
+                            <input type="radio" id="star5" name="rate" value="5" />
+                            <label for="star5" title="5 stars">5 stars</label>
+                            <input type="radio" id="star4" name="rate" value="4" />
+                            <label for="star4" title="4 stars">4 stars</label>
+                            <input type="radio" id="star3" name="rate" value="3" />
+                            <label for="star3" title="3 stars">3 stars</label>
+                            <input type="radio" id="star2" name="rate" value="2" />
+                            <label for="star2" title="2 stars">2 stars</label>
+                            <input type="radio" id="star1" name="rate" value="1" />
+                            <label for="star1" title="1 star">1 star</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary" {{ disable_tag }}>Give feedback</button>
+                    </form>
     			</div>
-    		</div>
-    	</div>
+
+    			<div class="col-md-1 col-sm-0"></div>
+
+    			<div class="col-md-6 col-sm-12">
+                    <h4 class="text-left">Reviews</h2>
+                    {% for review in reviews %}
+    			    <div class="card m-3">
+                	    <div class="card-body">
+                	        <div class="row">
+                        	    <div class="col-md-12">
+                    	            <span class="float-left"><strong>{{ review.username }}</strong></span>
+                    	            {% for i in range(review.mark) %}
+                    	                <span class="float-right"><i class="text-warning fa fa-star"></i></span>
+                                    {% endfor %}
+                        	       <div class="clearfix"></div>
+                        	        <p>{{ review.review_text }}</p>
+                        	        <p class="text-secondary text-right">{{ review.date }}</p>
+                        	    </div>
+
+                    	    </div>
+                    	</div>
+                    </div>
+                    <br>
+                    {% else %}
+                        <p>No any reviews. You can be first!</p>
+                    {% endfor %}
+
+
+                </div>
+            </div>
+        </div>
     </div>
 
 {% endblock %}
