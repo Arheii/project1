@@ -100,19 +100,27 @@ def logout():
 @app.route("/result", methods=["GET"])
 def result():
     q = request.args.get("q").lower()
-    print("query=", q)
-    books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q LIMIT 30",
-                             {"q": '%' + q + '%'}).fetchall()
-    return render_template("result.html", books=books, q=q)
+    p = request.args.get("p")
+    if p is not None and p.isdigit():
+        p = max(int(p), 1)
+    else:
+        p = 1
+    print("p" , p)
+    books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q \
+                        LIMIT 10 OFFSET :p",
+                         {"q": '%' + q + '%', "p": 10 * (p-1)}).fetchall()
+    max_p = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q",
+                         {"q": '%' + q + '%', "p": 10 * (p-1)}).rowcount
+    return render_template("result.html", books=books, q=q, p=p, max_p=int(max_p/10) + 1)
 
 
 @app.route("/book/<string:isbn>", methods=['GET', 'POST'])
 def book(isbn):
-
-    book = db.execute("SELECT * FROM books WHERE isbn = :isbn",
-                             {"isbn": isbn}).fetchone()
+    # return single book page, with info and reviews
+    book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
+                             {"isbn": isbn.lower()}).fetchone()
     if book is None:
-        return  render_template("error.html", message=f"Code 404. Book with isbn={isbn} not found."), 404
+        return  render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
 
     reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
                         ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
@@ -129,6 +137,7 @@ def book(isbn):
     # Get average rating from Goodread.com
     api_rews = lookup(isbn)
 
+    # if user left review via 'POST'
     if request.method == "POST":
         rate = request.form.get("rate")
         review_text = request.form.get("review_text")
@@ -143,12 +152,31 @@ def book(isbn):
                 VALUES (:book_id, :user_id, now(), :review_text, :mark)",
                 {"book_id": book.id, "user_id": user_id, "review_text": review_text, "mark": rate})
         db.commit()
+
         reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
                             ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30 LIMIT 30",\
                             {"id": book.id}).fetchall()
         is_left_review = True
 
-    return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review, rate_err="")
+    return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review)
+
+
+
+@app.route("/api/<string:isbn>", methods=['GET'])
+def api(isbn):
+    # return info about book in JSON
+    book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
+                             {"isbn": isbn.lower()}).fetchone()
+    if book is None:
+        return  render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
+
+    reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
+                        ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
+                        {"id": book.id}).fetchall()
+
+
+
+
 
 
 def lookup(isbn):
