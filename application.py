@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, session, render_template, request
+from flask import Flask, session, render_template, request, jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -46,7 +46,7 @@ def login():
 
     # Check email is exist
     ans = db.execute("SELECT id, username, pass_hash FROM users WHERE email = :email",
-                             {"email": email}).fetchone()
+                     {"email": email}).fetchone()
     if ans is None:
         print(f"ANS = {ans}")
         return render_template("login.html",  message="User not found")
@@ -63,6 +63,7 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def registration():
+    # Check forms and create user in database
     session.clear()
     if request.method == "GET":
         return render_template("register.html", message="")
@@ -83,10 +84,10 @@ def registration():
 
     pass_hash = generate_password_hash(password)
     db.execute("INSERT INTO users (email, pass_hash, username) VALUES (:email, :pass_hash, :username)",
-            {"email": email, "pass_hash": pass_hash, "username": username})
+              {"email": email, "pass_hash": pass_hash, "username": username})
     db.commit()
     session['user_id'] = db.execute("SELECT id FROM users WHERE email = :email",
-                             {"email": email}).fetchone()[0]
+                                   {"email": email}).fetchone()[0]
     session['username'] = username
     return render_template("index.html")
 
@@ -99,18 +100,19 @@ def logout():
 
 @app.route("/result", methods=["GET"])
 def result():
+    # return result for search <list book>
     q = request.args.get("q").lower()
     p = request.args.get("p")
     if p is not None and p.isdigit():
         p = max(int(p), 1)
     else:
         p = 1
-    print("p" , p)
+    print("p", p)
     books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q \
-                        LIMIT 10 OFFSET :p",
-                         {"q": '%' + q + '%', "p": 10 * (p-1)}).fetchall()
+                      LIMIT 10 OFFSET :p",
+                      {"q": '%' + q + '%', "p": 10 * (p-1)}).fetchall()
     max_p = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE :q OR LOWER(isbn) LIKE :q OR LOWER(author) LIKE :q",
-                         {"q": '%' + q + '%', "p": 10 * (p-1)}).rowcount
+                      {"q": '%' + q + '%', "p": 10 * (p-1)}).rowcount
     return render_template("result.html", books=books, q=q, p=p, max_p=int(max_p/10) + 1)
 
 
@@ -118,9 +120,9 @@ def result():
 def book(isbn):
     # return single book page, with info and reviews
     book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
-                             {"isbn": isbn.lower()}).fetchone()
+                     {"isbn": isbn.lower()}).fetchone()
     if book is None:
-        return  render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
+        return render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
 
     reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
                         ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
@@ -154,29 +156,35 @@ def book(isbn):
         db.commit()
 
         reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
-                            ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30 LIMIT 30",\
-                            {"id": book.id}).fetchall()
+                             ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30 ",
+                             {"id": book.id}).fetchall()
         is_left_review = True
 
     return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review)
-
 
 
 @app.route("/api/<string:isbn>", methods=['GET'])
 def api(isbn):
     # return info about book in JSON
     book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
-                             {"isbn": isbn.lower()}).fetchone()
+                     {"isbn": isbn.lower()}).fetchone()
     if book is None:
-        return  render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
+        return render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
 
-    reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
-                        ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
-                        {"id": book.id}).fetchall()
+    reviews = db.execute("SELECT mark FROM reviews WHERE book_id = :id",
+                         {"id": book.id}).fetchall()
+    count = len(reviews)
+    average = 0
+    if count:
+        average = sum(review.mark for review in reviews) / count
 
-
-
-
+    ans = {"title": book.title,
+           "author": book.author,
+           "year": book.year,
+           "isbn": book.isbn,
+           "review_count": count,
+           "average_score": average}
+    return jsonify(ans)
 
 
 def lookup(isbn):

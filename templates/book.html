@@ -16,7 +16,7 @@
         			    <h4>{{ book.title }}</h4>
         			    <p>Author:  {{ book.author }}<br>
         			    Year: {{ book.year }}<br>
-                        isbn: {{ book.isbn }}</p>
+                        isbn: <a href="/api/{{ book.isbn }}" title="API request">{{ book.isbn }}</a></p>
         			    <span class="heading">User Rating</span>
         			    {% for i in range(1, 6) %}
         			        {% if i < api_rews['average_rating'] %}
