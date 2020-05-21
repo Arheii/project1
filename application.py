@@ -122,7 +122,7 @@ def book(isbn):
     book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
                      {"isbn": isbn.lower()}).fetchone()
     if book is None:
-        return render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
+        return render_template("error.html", message=f"Book with isbn={isbn} not found."), 404
 
     reviews = db.execute("SELECT reviews.*, users.username FROM reviews JOIN users \
                         ON reviews.user_id = users.id WHERE book_id = :id LIMIT 30",\
@@ -145,7 +145,7 @@ def book(isbn):
         review_text = request.form.get("review_text")
 
         if rate is None or rate not in '12345':
-            return render_template("book.html", book=book, api_rews=api_rews, is_left_review=is_left_review, rate_err="Please rate first"), 406
+            return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review, rate_err="Please rate first"), 406
 
         if is_left_review:
             return render_template("book.html", book=book, api_rews=api_rews, reviews=reviews, is_left_review=is_left_review, rate_err="You already left a review"), 406
@@ -169,7 +169,7 @@ def api(isbn):
     book = db.execute("SELECT * FROM books WHERE LOWER(isbn) = :isbn",
                      {"isbn": isbn.lower()}).fetchone()
     if book is None:
-        return render_template("error.html", message=f"<h3>404</h3><br> Book with isbn={isbn} not found."), 404
+        return render_template("error.html", message=f"Book with isbn={isbn} not found."), 404
 
     reviews = db.execute("SELECT mark FROM reviews WHERE book_id = :id",
                          {"id": book.id}).fetchall()
